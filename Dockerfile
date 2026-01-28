@@ -28,9 +28,29 @@ RUN apt-get -y update && apt-get -y install \
     libsqlite3-dev \
     libglew-dev \
     libcgal-dev \
-    python3-pandas
+    python3-pandas \
+    libgtk-3-dev \
+    pkg-config \
+    libjpeg-dev libpng-dev libtiff-dev \
+    libavcodec-dev libavformat-dev libswscale-dev 
+
 
 WORKDIR /opencv
+
+# # Install OpenCV
+# RUN wget -O opencv.zip https://github.com/opencv/opencv/archive/4.10.0.zip && \
+#     wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.10.0.zip && \
+#     unzip opencv.zip && \
+#     unzip opencv_contrib.zip && \
+#     mkdir -p build && cd build && \
+#     cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-4.10.0/modules \
+#     -DBUILD_opencv_hdf=OFF \
+#     -DBUILD_TESTS=OFF \
+#     -DBUILD_PERF_TESTS=OFF \
+#     -DBUILD_LIST=calib3d,highgui,features2d,imgproc,flann,videoio \
+#     ../opencv-4.10.0 && \
+#     make -j8 && \
+#     make install
 
 # Install OpenCV
 RUN wget -O opencv.zip https://github.com/opencv/opencv/archive/4.10.0.zip && \
@@ -39,13 +59,15 @@ RUN wget -O opencv.zip https://github.com/opencv/opencv/archive/4.10.0.zip && \
     unzip opencv_contrib.zip && \
     mkdir -p build && cd build && \
     cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-4.10.0/modules \
-    -DBUILD_opencv_hdf=OFF \
-    -DBUILD_TESTS=OFF \
-    -DBUILD_PERF_TESTS=OFF \
-    -DBUILD_LIST=calib3d,highgui,features2d,imgproc,flann,videoio \
-    ../opencv-4.10.0 && \
+          -DBUILD_opencv_hdf=OFF \
+          -DBUILD_TESTS=OFF \
+          -DBUILD_PERF_TESTS=OFF \
+          ../opencv-4.10.0 && \
     make -j8 && \
-    make install
+    make install && \
+    ldconfig
+
+
     
 RUN wget http://ceres-solver.org/ceres-solver-2.2.0.tar.gz && \
     tar -zxf ceres-solver-2.2.0.tar.gz && \
