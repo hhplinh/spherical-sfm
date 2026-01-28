@@ -1,12 +1,11 @@
+# https://www.learnopencv.com/install-opencv3-on-ubuntu
+# https://docs.opencv.org/3.4/d6/d15/tutorial_building_tegra_cuda.html
+
+# FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu20.04
 FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV TZ="America/Los_Angeles"
-
-# Set this to match your GPU (examples: 70,75,80,86,89,90)
-# You can override at build time: --build-arg CUDA_ARCH=86
-ARG CUDA_ARCH=70
-
 RUN apt-get -y update && apt-get -y install \
     wget \
     gdb \
@@ -15,9 +14,7 @@ RUN apt-get -y update && apt-get -y install \
     cmake \
     ninja-build \
     python3-pip \
-    python3-dev \
     build-essential \
-    pkg-config \
     libboost-all-dev \
     libeigen3-dev \
     libgoogle-glog-dev \
@@ -33,80 +30,94 @@ RUN apt-get -y update && apt-get -y install \
     libcgal-dev \
     python3-pandas \
     libgtk-3-dev \
+    pkg-config \
     libjpeg-dev libpng-dev libtiff-dev \
-    libavcodec-dev libavformat-dev libswscale-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libavcodec-dev libavformat-dev libswscale-dev 
+
 
 WORKDIR /opencv
 
-# Install OpenCV (WITH CUDA + opencv_contrib, so cudaoptflow.hpp exists)
+# # Install OpenCV
+# RUN wget -O opencv.zip https://github.com/opencv/opencv/archive/4.10.0.zip && \
+#     wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.10.0.zip && \
+#     unzip opencv.zip && \
+#     unzip opencv_contrib.zip && \
+#     mkdir -p build && cd build && \
+#     cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-4.10.0/modules \
+#     -DBUILD_opencv_hdf=OFF \
+#     -DBUILD_TESTS=OFF \
+#     -DBUILD_PERF_TESTS=OFF \
+#     -DBUILD_LIST=calib3d,highgui,features2d,imgproc,flann,videoio \
+#     ../opencv-4.10.0 && \
+#     make -j8 && \
+#     make install
+
+# Install OpenCV
 RUN wget -O opencv.zip https://github.com/opencv/opencv/archive/4.10.0.zip && \
     wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.10.0.zip && \
-    unzip -q opencv.zip && \
-    unzip -q opencv_contrib.zip && \
+    unzip opencv.zip && \
+    unzip opencv_contrib.zip && \
     mkdir -p build && cd build && \
     cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib-4.10.0/modules \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=/usr/local \
-          -DWITH_CUDA=ON \
-          -DWITH_CUDNN=ON \
-          -DWITH_CUBLAS=ON \
-          -DENABLE_FAST_MATH=ON \
-          -DCUDA_FAST_MATH=ON \
-          -DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH} \
           -DBUILD_opencv_hdf=OFF \
           -DBUILD_TESTS=OFF \
           -DBUILD_PERF_TESTS=OFF \
-          -DBUILD_EXAMPLES=OFF \
           ../opencv-4.10.0 && \
-    make -j"$(nproc)" && \
+    make -j8 && \
     make install && \
     ldconfig
 
+
+    
 RUN wget http://ceres-solver.org/ceres-solver-2.2.0.tar.gz && \
     tar -zxf ceres-solver-2.2.0.tar.gz && \
     mkdir ceres-bin && \
     cd ceres-bin && \
     cmake ../ceres-solver-2.2.0 -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BENCHMARKS=OFF && \
-    make -j"$(nproc)" && \
-    make install && \
-    ldconfig
+    make -j3 && \
+    make install
 
 RUN git clone https://github.com/vlarsson/PoseLib.git && \
     mkdir PoseLib-build && cd PoseLib-build && \
     cmake ../PoseLib && \
-    make -j"$(nproc)" && \
-    make install && \
-    ldconfig
+    make && \
+    make install
 
 RUN git clone https://github.com/laurentkneip/opengv.git && \
     cd opengv && \
-    mkdir build && cd build && \
+    mkdir build && \
+    cd build && \
     cmake .. && \
-    make -j"$(nproc)" && \
-    make install && \
-    ldconfig
+    make -j8 && \
+    make install
 
 RUN git clone https://github.com/jonathanventura/polynomial.git && \
     mkdir polynomial-build && cd polynomial-build && \
     cmake ../polynomial && \
-    make -j"$(nproc)" && \
-    make install && \
-    ldconfig
+    make && \
+    make install
 
 RUN wget https://github.com/colmap/colmap/archive/refs/tags/3.11.1.zip && \
-    unzip -q 3.11.1.zip && \
+    unzip 3.11.1.zip && \
     cd colmap-3.11.1 && \
-    mkdir build && cd build && \
-    cmake .. -DGUI_ENABLED=OFF -DCUDA_ENABLED=ON -DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH} && \
-    make -j"$(nproc)" && \
-    make install && \
-    ldconfig
+    mkdir build && \
+    cd build && \
+    cmake .. -DGUI_ENABLED=OFF -DCUDA_ENABLED=ON -DCMAKE_CUDA_ARCHITECTURES=70 && \
+    make -j8 && \
+    make install
 
+# RUN git clone https://github.com/kthohr/optim.git && \
+#     cd optim && \
+#     git submodule update --init && \
+#     export EIGEN_INCLUDE_PATH=/usr/include/eigen3 && \
+#     ./configure -i "/usr/local" -l eigen -p && \
+#     make && \
+#     make install
+
+# RUN git clone https://github.com/AIBluefisher/GraphOptim.git && \
 RUN git clone https://github.com/jonathanventura/GraphOptim.git && \
-    cd GraphOptim && \
+    cd GraphOptim  && \
     mkdir build && cd build && \
     cmake .. && \
-    make -j"$(nproc)" && \
-    make install && \
-    ldconfig
+    make -j8 && \
+    make install
