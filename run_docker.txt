@@ -10,11 +10,29 @@ docker run --rm -it --gpus all \
 -w /workspace \
 opencv-colmap:cuda12.8 bash
 
+
+
+mkdir build ;
+cd build ;
+cmake .. ;
+make -j8 ;
+
+
+
+
 rm -rf build ;
 mkdir build && cd build ;
 cmake .. -DBUILD_STITCHER=TRUE ;
 make -j8 ;
 
+
+
+
 run_spherical_sfm_uncalib \
 -images data/blurred_images \
 -output output
+
+
+
+-----
+./build/examples/run_spherical_sfm_uncalib -images data/src.mp4 -output output/
