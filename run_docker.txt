@@ -4,13 +4,14 @@ docker build -t opencv-colmap:cuda12.8 .
 docker build -t opencv-colmap:cuda12.8 \
   --build-arg CUDA_ARCH=120 .
 
+------------
 
 docker run --rm -it --gpus all \
 -v "$PWD":/workspace \
 -w /workspace \
 opencv-colmap:cuda12.8 bash
 
-
+--------
 
 mkdir build ;
 cd build ;
@@ -28,10 +29,7 @@ make -j8 ;
 
 
 
-run_spherical_sfm_uncalib \
--images data/blurred_images \
--output output
-
+cmake --build . -j8 --target run_spherical_sfm
 
 
 -----
