@@ -31,6 +31,20 @@ make -j8 ;
 
 cmake --build . -j8 --target run_spherical_sfm
 
+cmake --build . -j8 --target make_stereo_panorama
+
 
 -----
 ./build/examples/run_spherical_sfm_uncalib -images data/src.mp4 -output output/
+
+
+
+./build/examples/make_stereo_panorama -intrinsics output_uncalib/calib.txt -video data/src.mp4 -output output_uncalib
+./examples/make_stereo_panorama -intrinsics output_uncalib/calib.txt -video data/src.mp4 -output output_uncalib
+
+
+
+std::cerr << "Done at line" << __LINE__ << "\n";
+
+
+output_uncalib/poses.txt

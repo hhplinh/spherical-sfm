@@ -28,5 +28,8 @@ int main( int argc, char **argv )
     std::cout << "intrinsics : " << focal << ", " << centerx << ", " << centery << "\n";
 
     Intrinsics intrinsics(focal,centerx,centery);
+
+    std::cerr << "Enter panorama at line" << __LINE__ << "\n";
     make_stereo_panoramas( intrinsics, FLAGS_video, FLAGS_output, FLAGS_width, FLAGS_loop );
+    std::cerr << "Finish panorama at line" << __LINE__ << "\n";
 }

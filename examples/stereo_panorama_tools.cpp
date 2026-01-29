@@ -18,6 +18,7 @@
 #include <sphericalsfm/so3.h>
 #include <sphericalsfm/plane_estimator.h>
 #include <sphericalsfm/preemptive_ransac.h>
+#include <sphericalsfm/ray.h>
 
 #include "stereo_panorama_tools.h"
 
@@ -190,16 +191,23 @@ namespace stereopanotools {
     void load_keyframes( const std::string & posespath, std::vector<Keyframe> &keyframes )
     {
         FILE *posesf = fopen(posespath.c_str(),"r");
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
         while ( true )
         {
             int index;
             double t[3];
             double r[3];
             
+            std::cerr << "Done at line" << __LINE__ << "\n";
+
             int nread = fscanf(posesf,"%d %lf %lf %lf %lf %lf %lf\n",
                                &index,
                                t+0,t+1,t+2,
                                r+0,r+1,r+2);
+
+            std::cerr << "Done at line" << __LINE__ << "\n";
+            
             if ( nread != 7 ) break;
             
             Keyframe kf;
@@ -210,7 +218,11 @@ namespace stereopanotools {
             
             keyframes.push_back(kf);
         }
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
         fclose(posesf);
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
     }
 
     void decompose_keyframe_rotations( std::vector<Keyframe> &keyframes )
@@ -273,10 +285,56 @@ namespace stereopanotools {
         return R;
     }
 
+    // Adapter class to fit PlaneEstimator to the old RANSAC interface
+    struct PlaneEstimatorAdapter {
+        Plane plane;
+        std::vector<Plane> planes;
+        const RayPairList &centers;
+        
+        PlaneEstimatorAdapter(const RayPairList &_centers) : centers(_centers) {}
+        
+        int sampleSize() const { return 3; }
+        
+        double score(RayPairList::iterator it) const {
+            const Eigen::Vector3d &point = it->first.head(3);
+            return std::abs(plane.normal.dot(point) - plane.d);
+        }
+        
+        void chooseSolution(int idx) {
+            plane = planes[idx];
+        }
+        
+        int compute(RayPairList::iterator begin, RayPairList::iterator end) {
+            planes.clear();
+            int n = std::distance(begin, end);
+            if (n < 3) return 0;
+            
+            // Get three points from the sample
+            Eigen::Vector3d p1 = begin[0].first.head(3);
+            Eigen::Vector3d p2 = begin[1].first.head(3);
+            Eigen::Vector3d p3 = begin[2].first.head(3);
+            
+            // Compute plane normal using cross product
+            Eigen::Vector3d v1 = p2 - p1;
+            Eigen::Vector3d v2 = p3 - p1;
+            Eigen::Vector3d normal = v1.cross(v2);
+            
+            if (normal.norm() < 1e-10) return 0; // Degenerate case
+            
+            normal.normalize();
+            double d = normal.dot(p1);
+            
+            plane.normal = normal;
+            plane.d = d;
+            planes.push_back(plane);
+            return 1;
+        }
+    };
+
     void estimate_plane( std::vector<Keyframe> &keyframes )
     {
         RayPairList centers(keyframes.size());
-        for ( int i = 0; i < keyframes.size(); i++ )
+        for ( size_t i = 0; i < keyframes.size(); i++ )
         {
             Keyframe &kf = keyframes[i];
             
@@ -287,18 +345,18 @@ namespace stereopanotools {
             centers[i] = std::make_pair( ray, ray );
         }
         
-        std::vector<PlaneEstimator*> estimators(200);
-        for ( int i = 0; i < estimators.size(); i++ ) estimators[i] = new PlaneEstimator;
+        std::vector<PlaneEstimatorAdapter*> estimators(200);
+        for ( size_t i = 0; i < estimators.size(); i++ ) estimators[i] = new PlaneEstimatorAdapter(centers);
         
-        PreemptiveRANSAC<RayPairList, PlaneEstimator> plane_ransac;
+        PreemptiveRANSAC<RayPairList, PlaneEstimatorAdapter> plane_ransac;
         plane_ransac.inlier_threshold = 0.01;
         
         std::vector<bool> inliers;
-        PlaneEstimator *best_estimator = NULL;
+        PlaneEstimatorAdapter *best_estimator = NULL;
         int ninliers = plane_ransac.compute( centers.begin(), centers.end(), estimators, &best_estimator, inliers );
         std::cout << ninliers << "/" << centers.size() << " inliers\n";
-        std::cout << best_estimator->normal << "\n";
-        Eigen::Vector3d up = best_estimator->normal;
+        std::cout << best_estimator->plane.normal << "\n";
+        Eigen::Vector3d up = best_estimator->plane.normal;
         if ( up(1) < 0 ) up = -up;
         
         // calculate rotation to correct up vector
@@ -354,6 +412,11 @@ namespace stereopanotools {
         {
             Keyframe &kf = keyframes[i];
             kf.t *= 1./min_dist;
+        }
+        
+        // Clean up estimators
+        for ( size_t i = 0; i < estimators.size(); i++ ) {
+            delete estimators[i];
         }
     }
 
@@ -417,7 +480,11 @@ namespace stereopanotools {
 
         std::cout << "estimating plane...\n";
         Eigen::Vector3d up(0,1,0);
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
         estimate_plane( keyframes );
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
 
         std::cout << "decomposing rotations...\n";
         decompose_keyframe_rotations( keyframes );
@@ -427,6 +494,7 @@ namespace stereopanotools {
 
         std::cout << "keyframe poses: \n";
         for ( int i = 0; i < keyframes.size(); i++ ) std::cout << i << "\t" << keyframes[i].t.transpose() << "\t" << so3ln(keyframes[i].R).transpose() << "\n";
+        std::cerr << "Done at line" << __LINE__ << "\n";
 
         std::cout << "thetas before: \n";
         for ( int i = 0; i < keyframes.size(); i++ ) std::cout << i << "\t" << keyframes[i].theta*180/M_PI << "\n";
@@ -512,12 +580,18 @@ namespace stereopanotools {
         cv::Mat left_image_float;
         cv::Mat right_image_float;
         
+
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
         std::vector<cv::Mat> panoramas(nphi);
         for ( int phinum = 0; phinum < nphi; phinum++ )
         {
             panoramas[phinum] = cv::Mat(height,ntheta,CV_8UC3,cv::Scalar(0,0,0,0));
         }
         
+
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
         // iterate through each keyframe pair
         for ( int kfnum = 0; kfnum < keyframes.size(); kfnum++ )
         {
@@ -548,6 +622,9 @@ namespace stereopanotools {
 
           bool found_one_theta = false;
 
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
+
           // find theta / phi combinations which fall between these keyframes
           for ( int thetanum = start_theta; thetanum < end_theta; thetanum++ )
           {
@@ -566,6 +643,9 @@ namespace stereopanotools {
             // project rays to circle
             Eigen::Vector3d rs_L = project(r_L,up);
             Eigen::Vector3d rs_R = project(r_R,up);
+
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
             
             for ( int phinum = 0; phinum < phirange.size(); phinum++ ) 
             {
@@ -616,6 +696,9 @@ namespace stereopanotools {
           }
           
         }
+
+        std::cerr << "Done at line" << __LINE__ << "\n";
+
         
         std::vector<cv::Mat> spherical_panos(panoramas.size());
         for ( int i = 0; i < panoramas.size(); i++ )
