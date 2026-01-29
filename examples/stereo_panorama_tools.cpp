@@ -191,7 +191,7 @@ namespace stereopanotools {
     void load_keyframes( const std::string & posespath, std::vector<Keyframe> &keyframes )
     {
         FILE *posesf = fopen(posespath.c_str(),"r");
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
         while ( true )
         {
@@ -199,14 +199,14 @@ namespace stereopanotools {
             double t[3];
             double r[3];
             
-            std::cerr << "Done at line" << __LINE__ << "\n";
+            
 
             int nread = fscanf(posesf,"%d %lf %lf %lf %lf %lf %lf\n",
                                &index,
                                t+0,t+1,t+2,
                                r+0,r+1,r+2);
 
-            std::cerr << "Done at line" << __LINE__ << "\n";
+            
             
             if ( nread != 7 ) break;
             
@@ -218,10 +218,10 @@ namespace stereopanotools {
             
             keyframes.push_back(kf);
         }
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
         fclose(posesf);
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
     }
 
@@ -480,10 +480,10 @@ namespace stereopanotools {
 
         std::cout << "estimating plane...\n";
         Eigen::Vector3d up(0,1,0);
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
         estimate_plane( keyframes );
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
 
         std::cout << "decomposing rotations...\n";
@@ -494,7 +494,7 @@ namespace stereopanotools {
 
         std::cout << "keyframe poses: \n";
         for ( int i = 0; i < keyframes.size(); i++ ) std::cout << i << "\t" << keyframes[i].t.transpose() << "\t" << so3ln(keyframes[i].R).transpose() << "\n";
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
         std::cout << "thetas before: \n";
         for ( int i = 0; i < keyframes.size(); i++ ) std::cout << i << "\t" << keyframes[i].theta*180/M_PI << "\n";
@@ -581,7 +581,7 @@ namespace stereopanotools {
         cv::Mat right_image_float;
         
 
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
         std::vector<cv::Mat> panoramas(nphi);
         for ( int phinum = 0; phinum < nphi; phinum++ )
@@ -590,7 +590,7 @@ namespace stereopanotools {
         }
         
 
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
         // iterate through each keyframe pair
         for ( int kfnum = 0; kfnum < keyframes.size(); kfnum++ )
@@ -622,7 +622,7 @@ namespace stereopanotools {
 
           bool found_one_theta = false;
 
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
 
           // find theta / phi combinations which fall between these keyframes
@@ -644,7 +644,7 @@ namespace stereopanotools {
             Eigen::Vector3d rs_L = project(r_L,up);
             Eigen::Vector3d rs_R = project(r_R,up);
 
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
             
             for ( int phinum = 0; phinum < phirange.size(); phinum++ ) 
@@ -697,7 +697,7 @@ namespace stereopanotools {
           
         }
 
-        std::cerr << "Done at line" << __LINE__ << "\n";
+        
 
         
         std::vector<cv::Mat> spherical_panos(panoramas.size());
