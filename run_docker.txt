@@ -1,24 +1,15 @@
-docker build -t opencv-colmap:cuda12.8 .
-
 # for NVIDIA GeForce RTX 5060 Ti
 docker build -t opencv-colmap:cuda12.8 \
   --build-arg CUDA_ARCH=120 .
 
-------------
+---
 
 docker run --rm -it --gpus all \
 -v "$PWD":/workspace \
 -w /workspace \
 opencv-colmap:cuda12.8 bash
 
---------
-
-mkdir build ;
-cd build ;
-cmake .. ;
-make -j8 ;
-
-
+---
 
 
 rm -rf build ;
@@ -34,16 +25,14 @@ cmake --build . -j8 --target run_spherical_sfm
 cmake --build . -j8 --target make_stereo_panorama
 
 
------
+---
 ./build/examples/run_spherical_sfm_uncalib -images data/src.mp4 -output output/
 
-
-
 ./build/examples/make_stereo_panorama -intrinsics output_uncalib/calib.txt -video data/src.mp4 -output output_uncalib
-./examples/make_stereo_panorama -intrinsics output_uncalib/calib.txt -video data/src.mp4 -output output_uncalib
 
 
-
+---
+# For debugging:
 std::cerr << "Done at line" << __LINE__ << "\n";
 
 
